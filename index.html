@@ -3,22 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スケートボードゲーム（強化版）</title>
+<title>スケートボードゲーム（完成版）</title>
 <style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: linear-gradient(#87CEEB, #ffffff);
-    font-family: sans-serif;
-  }
+  body { margin: 0; overflow: hidden; background: linear-gradient(#87CEEB, #ffffff); }
   canvas { display: block; }
-  #ui {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    color: #333;
-    font-size: 18px;
-  }
+  #ui { position: absolute; top: 10px; left: 10px; font-size: 18px; }
 </style>
 </head>
 <body>
@@ -31,37 +20,49 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let groundY = canvas.height - 100;
+
 let player = {
   x: 100,
-  y: canvas.height - 150,
-  width: 60,
-  height: 20,
+  y: groundY - 60,
   vy: 0,
   gravity: 0.8,
   jump: -15,
-  onGround: true
+  onGround: true,
+  boost: 0
 };
 
 let obstacles = [];
+let valleys = [];
+let items = [];
 let score = 0;
 let gameOver = false;
 
 function spawnObstacle() {
-  const type = Math.random();
-
-  if (type < 0.4) {
-    // 高い壁
-    obstacles.push({ x: canvas.width, y: canvas.height - 180, width: 30, height: 80, type: "rect" });
-  } else if (type < 0.7) {
-    // 低い障害物
-    obstacles.push({ x: canvas.width, y: canvas.height - 120, width: 40, height: 20, type: "rect" });
-  } else {
-    // 三角（ジャンプしにくい）
-    obstacles.push({ x: canvas.width, y: canvas.height - 100, width: 40, height: 40, type: "triangle" });
-  }
+  const height = Math.random() * 60 + 20;
+  obstacles.push({
+    x: canvas.width,
+    y: groundY - height,
+    width: 30,
+    height: height
+  });
 }
 
-setInterval(spawnObstacle, 1200);
+function spawnValley() {
+  valleys.push({ x: canvas.width, width: Math.random() * 120 + 80 });
+}
+
+function spawnItem() {
+  items.push({
+    x: canvas.width,
+    y: groundY - 150,
+    size: 20
+  });
+}
+
+setInterval(spawnObstacle, 1400);
+setInterval(spawnValley, 3500);
+setInterval(spawnItem, 3000);
 
 function update() {
   if (gameOver) return;
@@ -69,29 +70,57 @@ function update() {
   player.vy += player.gravity;
   player.y += player.vy;
 
-  if (player.y > canvas.height - 150) {
-    player.y = canvas.height - 150;
+  let onValley = false;
+
+  valleys.forEach(v => {
+    v.x -= 7;
+    if (player.x > v.x && player.x < v.x + v.width) {
+      onValley = true;
+    }
+  });
+
+  if (!onValley && player.y > groundY - 60) {
+    player.y = groundY - 60;
     player.vy = 0;
     player.onGround = true;
   }
 
+  if (onValley && player.y > groundY + 200) {
+    endGame("谷に落ちた！");
+  }
+
   obstacles.forEach(o => {
     o.x -= 7;
-
-    // 当たり判定（簡易）
     if (
       player.x < o.x + o.width &&
-      player.x + player.width > o.x &&
+      player.x + 60 > o.x &&
       player.y < o.y + o.height &&
-      player.y + player.height > o.y
+      player.y + 60 > o.y
     ) {
-      gameOver = true;
-      alert("ゲームオーバー！ スコア: " + score);
-      location.reload();
+      endGame("ぶつかった！");
     }
   });
 
+  items.forEach((it, i) => {
+    it.x -= 7;
+    if (
+      player.x < it.x + it.size &&
+      player.x + 60 > it.x &&
+      player.y < it.y + it.size &&
+      player.y + 60 > it.y
+    ) {
+      player.boost = 200; // 強化時間
+      items.splice(i, 1);
+    }
+  });
+
+  if (player.boost > 0) {
+    player.boost--;
+  }
+
   obstacles = obstacles.filter(o => o.x > -50);
+  valleys = valleys.filter(v => v.x > -150);
+  items = items.filter(i => i.x > -50);
 
   score++;
   document.getElementById("score").textContent = score;
@@ -100,35 +129,36 @@ function update() {
 function drawPlayer() {
   // ボード
   ctx.fillStyle = "black";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillRect(player.x, player.y + 30, 60, 10);
 
   // タイヤ
-  ctx.fillStyle = "gray";
   ctx.beginPath();
-  ctx.arc(player.x + 10, player.y + player.height + 5, 5, 0, Math.PI * 2);
-  ctx.arc(player.x + player.width - 10, player.y + player.height + 5, 5, 0, Math.PI * 2);
+  ctx.arc(player.x + 10, player.y + 45, 5, 0, Math.PI * 2);
+  ctx.arc(player.x + 50, player.y + 45, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "gray";
   ctx.fill();
 
-  // 人（シンプル）
-  ctx.fillStyle = "blue";
-  ctx.fillRect(player.x + 20, player.y - 20, 20, 20);
-}
+  // 人（頭）
+  ctx.beginPath();
+  ctx.arc(player.x + 30, player.y, 10, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffcc99";
+  ctx.fill();
 
-function drawObstacles() {
-  obstacles.forEach(o => {
-    ctx.fillStyle = "red";
-    if (o.type === "rect") {
-      ctx.fillRect(o.x, o.y, o.width, o.height);
-    } else {
-      // 三角
-      ctx.beginPath();
-      ctx.moveTo(o.x, o.y + o.height);
-      ctx.lineTo(o.x + o.width / 2, o.y);
-      ctx.lineTo(o.x + o.width, o.y + o.height);
-      ctx.closePath();
-      ctx.fill();
-    }
-  });
+  // 体
+  ctx.strokeStyle = "blue";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(player.x + 30, player.y + 10);
+  ctx.lineTo(player.x + 30, player.y + 30);
+  ctx.stroke();
+
+  // 足
+  ctx.beginPath();
+  ctx.moveTo(player.x + 30, player.y + 30);
+  ctx.lineTo(player.x + 15, player.y + 40);
+  ctx.moveTo(player.x + 30, player.y + 30);
+  ctx.lineTo(player.x + 45, player.y + 40);
+  ctx.stroke();
 }
 
 function draw() {
@@ -136,10 +166,33 @@ function draw() {
 
   // 地面
   ctx.fillStyle = "#654321";
-  ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+  ctx.fillRect(0, groundY, canvas.width, 100);
+
+  // 谷
+  ctx.fillStyle = "#87CEEB";
+  valleys.forEach(v => {
+    ctx.fillRect(v.x, groundY, v.width, 200);
+  });
+
+  // 障害物
+  ctx.fillStyle = "red";
+  obstacles.forEach(o => {
+    ctx.fillRect(o.x, o.y, o.width, o.height);
+  });
+
+  // 羽アイテム
+  ctx.fillStyle = "gold";
+  items.forEach(it => {
+    ctx.beginPath();
+    ctx.moveTo(it.x, it.y);
+    ctx.lineTo(it.x + 10, it.y - 10);
+    ctx.lineTo(it.x + 20, it.y);
+    ctx.lineTo(it.x + 10, it.y + 10);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   drawPlayer();
-  drawObstacles();
 }
 
 function loop() {
@@ -148,11 +201,18 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+function endGame(msg) {
+  gameOver = true;
+  alert(msg + " スコア: " + score);
+  location.reload();
+}
+
 loop();
 
 window.addEventListener("keydown", e => {
   if (e.code === "Space" && player.onGround) {
-    player.vy = player.jump;
+    let power = player.boost > 0 ? -22 : player.jump;
+    player.vy = power;
     player.onGround = false;
   }
 });
@@ -160,9 +220,11 @@ window.addEventListener("keydown", e => {
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  groundY = canvas.height - 100;
 });
 </script>
 </body>
 </html>
-
-    
+ 
+ 
+ 
