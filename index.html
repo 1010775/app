@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スケートボードゲーム</title>
+<title>スケートボードゲーム（強化版）</title>
 <style>
   body {
     margin: 0;
@@ -11,9 +11,7 @@
     background: linear-gradient(#87CEEB, #ffffff);
     font-family: sans-serif;
   }
-  canvas {
-    display: block;
-  }
+  canvas { display: block; }
   #ui {
     position: absolute;
     top: 10px;
@@ -36,8 +34,8 @@ canvas.height = window.innerHeight;
 let player = {
   x: 100,
   y: canvas.height - 150,
-  width: 40,
-  height: 40,
+  width: 60,
+  height: 20,
   vy: 0,
   gravity: 0.8,
   jump: -15,
@@ -49,15 +47,21 @@ let score = 0;
 let gameOver = false;
 
 function spawnObstacle() {
-  obstacles.push({
-    x: canvas.width,
-    y: canvas.height - 110,
-    width: 30,
-    height: 30
-  });
+  const type = Math.random();
+
+  if (type < 0.4) {
+    // 高い壁
+    obstacles.push({ x: canvas.width, y: canvas.height - 180, width: 30, height: 80, type: "rect" });
+  } else if (type < 0.7) {
+    // 低い障害物
+    obstacles.push({ x: canvas.width, y: canvas.height - 120, width: 40, height: 20, type: "rect" });
+  } else {
+    // 三角（ジャンプしにくい）
+    obstacles.push({ x: canvas.width, y: canvas.height - 100, width: 40, height: 40, type: "triangle" });
+  }
 }
 
-setInterval(spawnObstacle, 1500);
+setInterval(spawnObstacle, 1200);
 
 function update() {
   if (gameOver) return;
@@ -72,9 +76,9 @@ function update() {
   }
 
   obstacles.forEach(o => {
-    o.x -= 6;
+    o.x -= 7;
 
-    // 当たり判定
+    // 当たり判定（簡易）
     if (
       player.x < o.x + o.width &&
       player.x + player.width > o.x &&
@@ -93,6 +97,40 @@ function update() {
   document.getElementById("score").textContent = score;
 }
 
+function drawPlayer() {
+  // ボード
+  ctx.fillStyle = "black";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+
+  // タイヤ
+  ctx.fillStyle = "gray";
+  ctx.beginPath();
+  ctx.arc(player.x + 10, player.y + player.height + 5, 5, 0, Math.PI * 2);
+  ctx.arc(player.x + player.width - 10, player.y + player.height + 5, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 人（シンプル）
+  ctx.fillStyle = "blue";
+  ctx.fillRect(player.x + 20, player.y - 20, 20, 20);
+}
+
+function drawObstacles() {
+  obstacles.forEach(o => {
+    ctx.fillStyle = "red";
+    if (o.type === "rect") {
+      ctx.fillRect(o.x, o.y, o.width, o.height);
+    } else {
+      // 三角
+      ctx.beginPath();
+      ctx.moveTo(o.x, o.y + o.height);
+      ctx.lineTo(o.x + o.width / 2, o.y);
+      ctx.lineTo(o.x + o.width, o.y + o.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -100,15 +138,8 @@ function draw() {
   ctx.fillStyle = "#654321";
   ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
 
-  // プレイヤー
-  ctx.fillStyle = "black";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-
-  // 障害物
-  ctx.fillStyle = "red";
-  obstacles.forEach(o => {
-    ctx.fillRect(o.x, o.y, o.width, o.height);
-  });
+  drawPlayer();
+  drawObstacles();
 }
 
 function loop() {
@@ -133,3 +164,5 @@ window.addEventListener("resize", () => {
 </script>
 </body>
 </html>
+
+    
