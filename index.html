@@ -1,8 +1,4 @@
-
-
-
-
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -15,12 +11,16 @@ body {
 }
 #game {
   margin: 50px auto;
-  width: 80%;
-  max-width: 500px;
+  width: 90%;
+  max-width: 520px;
   padding: 20px;
   background: white;
   border-radius: 20px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+.face {
+  font-size: 80px;
+  margin: 10px;
 }
 button {
   display: block;
@@ -42,16 +42,24 @@ button:hover {
 
 <div id="game">
   <h2 id="title">男子を選んでください</h2>
+  <div id="face" class="face"></div>
   <div id="choices"></div>
 </div>
 
 <script>
-const game = document.getElementById("game");
 const title = document.getElementById("title");
 const choices = document.getElementById("choices");
+const face = document.getElementById("face");
 
 let selectedBoy = "";
 let lovePoint = 0;
+let stage = 1;
+
+const faces = {
+  "優しい男子": "👓😊",
+  "クール男子": "😎🖤",
+  "元気男子": "☀️😆"
+};
 
 function showChoices(options) {
   choices.innerHTML = "";
@@ -65,19 +73,30 @@ function showChoices(options) {
 
 function selectBoy(name) {
   selectedBoy = name;
+  face.textContent = faces[name];
   title.textContent = name + "と帰り道！どうする？";
   showChoices([
-    { text: "一緒に帰ろうと誘う", action: () => nextScene(2) },
-    { text: "何も言わない", action: () => nextScene(0) }
+    { text: "一緒に帰ろうと誘う", action: () => scene2(2) },
+    { text: "軽くあいさつする", action: () => scene2(1) }
   ]);
 }
 
-function nextScene(point) {
+function scene2(point) {
   lovePoint += point;
-  title.textContent = selectedBoy + "と会話中...";
+  title.textContent = selectedBoy + "と会話中！何を話す？";
   showChoices([
-    { text: "面白い話をする", action: () => ending(2) },
-    { text: "静かにする", action: () => ending(0) }
+    { text: "学校の話", action: () => scene3(2) },
+    { text: "趣味の話", action: () => scene3(3) },
+    { text: "何も話さない", action: () => scene3(0) }
+  ]);
+}
+
+function scene3(point) {
+  lovePoint += point;
+  title.textContent = selectedBoy + "が笑っている！どうする？";
+  showChoices([
+    { text: "一緒に笑う", action: () => ending(2) },
+    { text: "照れる", action: () => ending(1) }
   ]);
 }
 
@@ -85,26 +104,58 @@ function ending(point) {
   lovePoint += point;
   choices.innerHTML = "";
 
-  if (lovePoint >= 3) {
-    title.textContent = "ハッピーエンド！" + selectedBoy + "と仲良くなった！";
+  if (lovePoint >= 5) {
+    title.textContent = "ハッピーエンド！" + selectedBoy + "ともっと仲良くなった！";
+    const next = document.createElement("button");
+    next.textContent = "次のステージへ";
+    next.onclick = nextStage;
+    choices.appendChild(next);
   } else {
     title.textContent = "バッドエンド...距離が縮まらなかった";
+    const retry = document.createElement("button");
+    retry.textContent = "もう一度";
+    retry.onclick = startGame;
+    choices.appendChild(retry);
+  }
+}
+
+function nextStage() {
+  stage++;
+  lovePoint = 0;
+  title.textContent = "ステージ" + stage + "：デート編！どこに行く？";
+  showChoices([
+    { text: "カフェ", action: () => ending2(2) },
+    { text: "映画", action: () => ending2(3) },
+    { text: "公園", action: () => ending2(1) }
+  ]);
+}
+
+function ending2(point) {
+  lovePoint += point;
+  choices.innerHTML = "";
+
+  if (lovePoint >= 2) {
+    title.textContent = "デート成功！完全ハッピーエンド✨";
+  } else {
+    title.textContent = "デート失敗...微妙な雰囲気に";
   }
 
   const retry = document.createElement("button");
-  retry.textContent = "もう一度";
+  retry.textContent = "最初から";
   retry.onclick = startGame;
   choices.appendChild(retry);
 }
 
 function startGame() {
   lovePoint = 0;
+  stage = 1;
   selectedBoy = "";
+  face.textContent = "";
   title.textContent = "男子を選んでください";
   showChoices([
-    { text: "優しい男子", action: () => selectBoy("優しい男子") },
-    { text: "クール男子", action: () => selectBoy("クール男子") },
-    { text: "元気男子", action: () => selectBoy("元気男子") }
+    { text: "優しい男子（メガネ先輩）", action: () => selectBoy("優しい男子") },
+    { text: "クール男子（センター分け）", action: () => selectBoy("クール男子") },
+    { text: "元気男子（色黒・短髪）", action: () => selectBoy("元気男子") }
   ]);
 }
 
@@ -113,3 +164,8 @@ startGame();
 
 </body>
 </html>
+
+
+
+ 
+
