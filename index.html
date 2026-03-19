@@ -1,244 +1,115 @@
-<!DOCTYPE html>
+
+
+
+
+ <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スケートボードゲーム（リッチ版）</title>
+<title>恋愛ゲーム</title>
 <style>
-  body { margin: 0; overflow: hidden; background: linear-gradient(#4facfe, #00f2fe); }
-  canvas { display: block; }
-  #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 18px; }
+body {
+  font-family: sans-serif;
+  background: linear-gradient(#ffd1dc, #fff);
+  text-align: center;
+}
+#game {
+  margin: 50px auto;
+  width: 80%;
+  max-width: 500px;
+  padding: 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+button {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #ff6f91;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:hover {
+  background: #ff3f6c;
+}
 </style>
 </head>
 <body>
-<div id="ui">スコア: <span id="score">0</span></div>
-<canvas id="game"></canvas>
+
+<div id="game">
+  <h2 id="title">男子を選んでください</h2>
+  <div id="choices"></div>
+</div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const game = document.getElementById("game");
+const title = document.getElementById("title");
+const choices = document.getElementById("choices");
 
-let groundY = canvas.height - 120;
+let selectedBoy = "";
+let lovePoint = 0;
 
-let player = {
-  x: 150,
-  y: groundY - 80,
-  vy: 0,
-  gravity: 0.8,
-  jump: -15,
-  onGround: true,
-  boost: 0
-};
-
-let bear = { x: -200, y: groundY - 80, speed: 4, active: false };
-
-let obstacles = [];
-let valleys = [];
-let items = [];
-let score = 0;
-let gameOver = false;
-
-function spawnObstacle() {
-  const h = Math.random() * 60 + 30;
-  obstacles.push({ x: canvas.width, y: groundY - h, width: 30, height: h });
-}
-
-function spawnValley() {
-  valleys.push({ x: canvas.width, width: Math.random() * 150 + 100 });
-}
-
-function spawnItem() {
-  items.push({ x: canvas.width, y: groundY - 180, size: 20 });
-}
-
-setInterval(spawnObstacle, 1300);
-setInterval(spawnValley, 3500);
-setInterval(spawnItem, 3000);
-
-setTimeout(() => { bear.active = true; }, 5000);
-
-function update() {
-  if (gameOver) return;
-
-  player.vy += player.gravity;
-  player.y += player.vy;
-
-  let onValley = false;
-
-  valleys.forEach(v => {
-    v.x -= 8;
-    if (player.x > v.x && player.x < v.x + v.width) {
-      onValley = true;
-    }
+function showChoices(options) {
+  choices.innerHTML = "";
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.textContent = opt.text;
+    btn.onclick = opt.action;
+    choices.appendChild(btn);
   });
+}
 
-  if (!onValley && player.y > groundY - 80) {
-    player.y = groundY - 80;
-    player.vy = 0;
-    player.onGround = true;
+function selectBoy(name) {
+  selectedBoy = name;
+  title.textContent = name + "と帰り道！どうする？";
+  showChoices([
+    { text: "一緒に帰ろうと誘う", action: () => nextScene(2) },
+    { text: "何も言わない", action: () => nextScene(0) }
+  ]);
+}
+
+function nextScene(point) {
+  lovePoint += point;
+  title.textContent = selectedBoy + "と会話中...";
+  showChoices([
+    { text: "面白い話をする", action: () => ending(2) },
+    { text: "静かにする", action: () => ending(0) }
+  ]);
+}
+
+function ending(point) {
+  lovePoint += point;
+  choices.innerHTML = "";
+
+  if (lovePoint >= 3) {
+    title.textContent = "ハッピーエンド！" + selectedBoy + "と仲良くなった！";
+  } else {
+    title.textContent = "バッドエンド...距離が縮まらなかった";
   }
 
-  if (onValley && player.y > groundY + 200) {
-    endGame("谷に落ちた！");
-  }
-
-  obstacles.forEach(o => {
-    o.x -= 8;
-    if (
-      player.x < o.x + o.width &&
-      player.x + 50 > o.x &&
-      player.y < o.y + o.height &&
-      player.y + 80 > o.y
-    ) endGame("ぶつかった！");
-  });
-
-  items.forEach((it, i) => {
-    it.x -= 8;
-    if (
-      player.x < it.x + it.size &&
-      player.x + 50 > it.x &&
-      player.y < it.y + it.size &&
-      player.y + 80 > it.y
-    ) {
-      player.boost = 200;
-      items.splice(i, 1);
-    }
-  });
-
-  if (player.boost > 0) player.boost--;
-
-  // クマ追跡
-  if (bear.active) {
-    bear.x += bear.speed;
-    if (bear.x + 60 > player.x) {
-      endGame("クマに捕まった！");
-    }
-  }
-
-  obstacles = obstacles.filter(o => o.x > -50);
-  valleys = valleys.filter(v => v.x > -200);
-  items = items.filter(i => i.x > -50);
-
-  score++;
-  document.getElementById("score").textContent = score;
+  const retry = document.createElement("button");
+  retry.textContent = "もう一度";
+  retry.onclick = startGame;
+  choices.appendChild(retry);
 }
 
-function drawPlayer() {
-  // ボード
-  ctx.fillStyle = "#222";
-  ctx.fillRect(player.x, player.y + 60, 60, 10);
-
-  // タイヤ
-  ctx.fillStyle = "black";
-  ctx.beginPath();
-  ctx.arc(player.x + 10, player.y + 75, 6, 0, Math.PI * 2);
-  ctx.arc(player.x + 50, player.y + 75, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 人（よりリアル）
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 3;
-
-  // 頭
-  ctx.beginPath();
-  ctx.arc(player.x + 30, player.y + 10, 10, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffcc99";
-  ctx.fill();
-
-  // 体
-  ctx.beginPath();
-  ctx.moveTo(player.x + 30, player.y + 20);
-  ctx.lineTo(player.x + 30, player.y + 50);
-  ctx.stroke();
-
-  // 腕
-  ctx.beginPath();
-  ctx.moveTo(player.x + 30, player.y + 30);
-  ctx.lineTo(player.x + 10, player.y + 40);
-  ctx.moveTo(player.x + 30, player.y + 30);
-  ctx.lineTo(player.x + 50, player.y + 40);
-  ctx.stroke();
-
-  // 足
-  ctx.beginPath();
-  ctx.moveTo(player.x + 30, player.y + 50);
-  ctx.lineTo(player.x + 15, player.y + 65);
-  ctx.moveTo(player.x + 30, player.y + 50);
-  ctx.lineTo(player.x + 45, player.y + 65);
-  ctx.stroke();
+function startGame() {
+  lovePoint = 0;
+  selectedBoy = "";
+  title.textContent = "男子を選んでください";
+  showChoices([
+    { text: "優しい男子", action: () => selectBoy("優しい男子") },
+    { text: "クール男子", action: () => selectBoy("クール男子") },
+    { text: "元気男子", action: () => selectBoy("元気男子") }
+  ]);
 }
 
-function drawBear() {
-  if (!bear.active) return;
-  ctx.fillStyle = "brown";
-  ctx.fillRect(bear.x, bear.y + 30, 60, 40);
-  ctx.beginPath();
-  ctx.arc(bear.x + 30, bear.y + 20, 20, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 地面
-  ctx.fillStyle = "#2d572c";
-  ctx.fillRect(0, groundY, canvas.width, 120);
-
-  // 谷
-  ctx.fillStyle = "#0a1a2f";
-  valleys.forEach(v => ctx.fillRect(v.x, groundY, v.width, 200));
-
-  // 障害物
-  ctx.fillStyle = "#ff4d4d";
-  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
-
-  // 羽
-  ctx.fillStyle = "yellow";
-  items.forEach(it => {
-    ctx.beginPath();
-    ctx.arc(it.x, it.y, 10, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  drawPlayer();
-  drawBear();
-}
-
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
-function endGame(msg) {
-  gameOver = true;
-  alert(msg + " スコア: " + score);
-  location.reload();
-}
-
-loop();
-
-window.addEventListener("keydown", e => {
-  if (e.code === "Space" && player.onGround) {
-    player.vy = player.boost > 0 ? -22 : player.jump;
-    player.onGround = false;
-  }
-});
-
-window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  groundY = canvas.height - 120;
-});
+startGame();
 </script>
+
 </body>
 </html>
- 
-
-
-
-  
- 
-
