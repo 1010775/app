@@ -10,7 +10,7 @@ body {
   text-align: center;
 }
 #game {
-  margin: 30px auto;
+  margin: 20px auto;
   width: 90%;
   max-width: 520px;
   padding: 20px;
@@ -18,9 +18,10 @@ body {
   border-radius: 20px;
   box-shadow: 0 0 15px rgba(0,0,0,0.2);
 }
-.face {
-  font-size: 70px;
-  margin: 10px;
+img {
+  width: 100%;
+  border-radius: 15px;
+  margin-bottom: 10px;
 }
 #bar {
   width: 100%;
@@ -52,7 +53,7 @@ button {
 
 <div id="game">
   <h2 id="title">男子を選んでください</h2>
-  <div id="face" class="face"></div>
+  <img id="charImg" src="" alt="キャラ画像" style="display:none;">
   <div id="bar"><div id="fill"></div></div>
   <div id="choices"></div>
 </div>
@@ -60,15 +61,15 @@ button {
 <script>
 const title = document.getElementById("title");
 const choices = document.getElementById("choices");
-const face = document.getElementById("face");
 const fill = document.getElementById("fill");
+const charImg = document.getElementById("charImg");
 
 let selectedBoy = "";
 let lovePoint = 0;
 
 const characters = {
   "優しい男子": {
-    face: "👓🙂",
+    img: "boy1.png",
     lines: [
       "無理しないでね、一緒に帰ろうか",
       "今日どうだった？",
@@ -76,7 +77,7 @@ const characters = {
     ]
   },
   "クール男子": {
-    face: "😎✨",
+    img: "boy2.png",
     lines: [
       "…帰るの？一緒に行く？",
       "別に嫌じゃない",
@@ -84,7 +85,7 @@ const characters = {
     ]
   },
   "元気男子": {
-    face: "😆☀️",
+    img: "boy3.png",
     lines: [
       "よっ！一緒に帰ろうぜ！",
       "今日めっちゃ楽しかったな！",
@@ -109,7 +110,8 @@ function showChoices(options) {
 
 function selectBoy(name) {
   selectedBoy = name;
-  face.textContent = characters[name].face;
+  charImg.src = characters[name].img;
+  charImg.style.display = "block";
   title.textContent = characters[name].lines[0];
   showChoices([
     { text: "誘う", action: () => scene2(2) },
@@ -199,7 +201,7 @@ function ending2(point) {
 function startGame() {
   lovePoint = 0;
   updateBar();
-  face.textContent = "";
+  charImg.style.display = "none";
   title.textContent = "男子を選んでください";
   showChoices([
     { text: "優しい男子（メガネ先輩）", action: () => selectBoy("優しい男子") },
@@ -214,7 +216,7 @@ startGame();
 </body>
 </html>
 
- 
 
-  
+
+ 
 
